@@ -1,5 +1,5 @@
 
-# **Challenge Assesment AMEX**
+# **Challenge Assessment AMEX*
 
 [Git Repository](https://github.com/Mayrelis/amexchallenge)
 
