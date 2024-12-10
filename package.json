@@ -10,7 +10,7 @@
     "start": "npm run build && node dist/server.js",
     "test": "jest"
   },
-  "author": "",
+  "author": "Mayrelis Morejon",
   "license": "ISC",
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
