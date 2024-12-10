@@ -1,11 +1,11 @@
 
-# **AMEX Challenge Project**
+# **Challenge Assesment AMEX**
 
 [Git Repository](https://github.com/Mayrelis/amexchallenge)
 
 ## **Project Overview**
 
-This project was developed to demonstrate my expertise as a Full-Stack Developer. It showcases my ability to work with modern technologies such as React, TypeScript, and server-side frameworks. The goal of this application is to provide a well-structured, scalable, and maintainable solution as part of a technical evaluation.
+This project was developed to demonstrate my expertise as a Developer. It showcases my ability to work with modern technologies such as React, TypeScript, and server-side frameworks. The goal of this application is to provide a well-structured, scalable, and maintainable solution as part of a technical evaluation.
 
 ---
 
