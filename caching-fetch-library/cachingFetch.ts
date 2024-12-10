@@ -1,13 +1,16 @@
-// You may edit this file, add new files to support this file,
-// and/or add new dependencies to the project as you see fit.
-// However, you must not change the surface API presented from this file,
-// and you should not need to change any other files in the project to complete the challenge
+import { useEffect, useState } from 'react';
 
 type UseCachingFetch = (url: string) => {
   isLoading: boolean;
-  data: unknown;
+  data: Record<string, any> | null; // Define un tipo más claro
   error: Error | null;
 };
+
+// In-memory cache for storing fetched data
+const cache: Record<string, Record<string, any> | null> = {};
+
+// Track ongoing fetch requests to avoid duplicate calls
+const pendingRequests: Record<string, Promise<Record<string, any> | null>> = {};
 
 /**
  * 1. Implement a caching fetch hook. The hook should return an object with the following properties:
@@ -28,37 +31,88 @@ type UseCachingFetch = (url: string) => {
  *
  */
 export const useCachingFetch: UseCachingFetch = (url) => {
-  return {
-    data: null,
-    isLoading: false,
-    error: new Error(
-      'UseCachingFetch has not been implemented, please read the instructions in DevTask.md',
-    ),
-  };
+  const [data, setData] = useState<Record<string, any> | null>(cache[url] || null);
+  const [isLoading, setIsLoading] = useState(!cache[url]);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    // If the data is already cached, skip fetching
+    if (cache[url]) return;
+
+    setIsLoading(true);
+
+    // Avoid duplicate requests for the same URL
+    if (!pendingRequests[url]) {
+      pendingRequests[url] = fetch(url)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch data from ${url}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((result) => {
+          cache[url] = result; // Cache the result
+          return result;
+        })
+        .catch((fetchError) => {
+          console.error(`Error fetching data from ${url}:`, fetchError);
+          throw fetchError;
+        })
+        .finally(() => {
+          delete pendingRequests[url]; // Remove the pending request
+        });
+    }
+
+    // Handle the promise
+    pendingRequests[url]
+      .then((result) => setData(result))
+      .catch(setError)
+      .finally(() => setIsLoading(false));
+  }, [url]);
+
+  return { isLoading, data, error };
 };
 
 /**
  * 2. Implement a preloading caching fetch function. The function should fetch the data.
- *
- * This function will be called once on the server before any rendering occurs.
- *
- * Any subsequent call to useCachingFetch should result in the returned data being available immediately.
- * Meaning that the page should be completely serverside rendered on /appWithSSRData
- *
- * Acceptance Criteria:
- * 1. The application at /appWithSSRData should properly render, with JavaScript disabled, you should see a list of people.
- * 2. You have not changed any code outside of this file to achieve this.
- * 3. This file passes a type-check.
- *
  */
 export const preloadCachingFetch = async (url: string): Promise<void> => {
-  throw new Error(
-    'preloadCachingFetch has not been implemented, please read the instructions in DevTask.md',
-  );
+  if (cache[url]) return;
+
+  if (!pendingRequests[url]) {
+    pendingRequests[url] = fetch(url)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to preload data from ${url}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        cache[url] = data;
+        return data;
+      })
+      .catch((error) => {
+        console.error(`Error preloading data from ${url}:`, error);
+        throw error;
+      });
+  }
+
+  await pendingRequests[url];
 };
 
 /**
  * 3.1 Implement a serializeCache function that serializes the cache to a string.
+ */
+export const serializeCache = (): string => {
+  try {
+    return JSON.stringify(cache);
+  } catch (error) {
+    console.error('Error serializing cache:', error);
+    return '{}';
+  }
+};
+
+/**
  * 3.2 Implement an initializeCache function that initializes the cache from a serialized cache string.
  *
  * Together, these two functions will help the framework transfer your cache to the browser.
@@ -73,8 +127,18 @@ export const preloadCachingFetch = async (url: string): Promise<void> => {
  * 4. This file passes a type-check.
  *
  */
-export const serializeCache = (): string => '';
+export const initializeCache = (serializedCache: string): void => {
+  try {
+    const parsedCache = JSON.parse(serializedCache) as Record<string, Record<string, any>>;
+    Object.assign(cache, parsedCache);
+  } catch (error) {
+    console.error('Error initializing cache:', error);
+  }
+};
 
-export const initializeCache = (serializedCache: string): void => {};
-
-export const wipeCache = (): void => {};
+/**
+ * Clears all entries in the cache.
+ */
+export const wipeCache = (): void => {
+  Object.keys(cache).forEach((key) => delete cache[key]);
+};
